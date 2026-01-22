@@ -1,10 +1,8 @@
-from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends
 import redis.asyncio as redis
-
-# Configuração do Pool
-REDIS_URL = "redis://localhost:6379/0"
-redis_pool = redis.ConnectionPool.from_url(REDIS_URL, decode_responses=True)
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
+from database.redis_cnx import redis_pool
+from routes.manages_values import router as manages_values_router
 
 
 @asynccontextmanager
@@ -15,24 +13,4 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
-
-
-async def get_redis():
-    return app.state.redis
-
-
-@app.post("/set")
-async def set_value(body: dict, db: redis.Redis = Depends(get_redis)):
-    print(body)
-
-    key = body.get("key")
-    value = body.get("value")
-
-    await db.set(key, value)
-    return {"message": f"Chave {key} definida"}
-
-
-@app.get("/get/{key}")
-async def get_value(key: str, db: redis.Redis = Depends(get_redis)):
-    result = await db.get(key)
-    return {key: result}
+app.include_router(manages_values_router)

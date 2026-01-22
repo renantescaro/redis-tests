@@ -1,35 +1,37 @@
+import os
 import redis
 import time
+from dotenv import load_dotenv
 from redis.exceptions import ConnectionError
 
 
 def test_redis_connection():
     try:
-        r = redis.Redis(
-            host="localhost",
-            port=6379,
-            db=0,
-            socket_connect_timeout=5,
-            decode_responses=True,
-        )
+        load_dotenv()
+        REDIS_URL = os.getenv("REDIS_URL")
+        if not REDIS_URL:
+            print("Erro ao carregar 'REDIS_URL' das variaveis de ambiente!")
+            return
 
-        # teste de Ping
+        r = redis.Redis.from_url(REDIS_URL)
+
+        # teste de ping
         start_ping = time.time()
         if r.ping():
             print(
                 f"Conexão estabelecida! (Ping: {(time.time() - start_ping)*1000:.2f}ms)"
             )
 
-        # teste de Escrita
+        # teste de escrita
         r.set("teste_chave", "Olá Redis")
         print("Escrita de chave: OK")
 
-        # teste de Leitura
+        # teste de leitura
         valor = r.get("teste_chave")
         if valor == "Olá Redis":
             print(f"Leitura de chave: OK (Valor: {valor})")
 
-        # teste de Expiração
+        # teste de expiração
         r.setex("chave_temporaria", 2, "vou sumir")
         print("Teste de TTL (2s) iniciado...")
         time.sleep(2.5)
